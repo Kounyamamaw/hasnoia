@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+
+  <!-- Page principale — keyword "framer export" -->
+  <url>
+    <loc>https://hasnoia.com/</loc>
+    <lastmod>2026-05-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://hasnoia.com/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://hasnoia.com/fr"/>
+  </url>
+
+  <!-- Page pricing -->
+  <url>
+    <loc>https://hasnoia.com/pricing</loc>
+    <lastmod>2026-05-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Pages SEO longue traîne — à créer en semaine 2 -->
+  <!-- Ces pages ciblent chaque variante du keyword "framer export" -->
+
+  <!-- "how to export framer site" — intention informationnelle forte -->
+  <url>
+    <loc>https://hasnoia.com/how-to-export-framer-site</loc>
+    <lastmod>2026-05-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- "framer to vercel" — intention transactionnelle -->
+  <url>
+    <loc>https://hasnoia.com/framer-to-vercel</loc>
+    <lastmod>2026-05-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- "tostatic alternative" — intent de comparaison -->
+  <url>
+    <loc>https://hasnoia.com/tostatic-alternative</loc>
+    <lastmod>2026-05-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <!-- "framer without subscription" -->
+  <url>
+    <loc>https://hasnoia.com/framer-without-subscription</loc>
+    <lastmod>2026-05-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <!-- "remove framer badge" -->
+  <url>
+    <loc>https://hasnoia.com/remove-framer-badge</loc>
+    <lastmod>2026-05-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+</urlset>
