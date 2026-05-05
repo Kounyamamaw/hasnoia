@@ -43,7 +43,7 @@ function cleanHtml(html) {
   // Commentaire export
   h = h.replace(
     /(<html[^>]*>)/i,
-    `$1\n<!-- Exported with hasnoia — ${new Date().toISOString()} -->`
+    `$1\n<!-- Exported with HASNOIA — ${new Date().toISOString()} -->`
   );
 
   return h;

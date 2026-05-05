@@ -1,6 +1,4 @@
 // frontend/src/hooks/useExport.js
-// Gère l'export : POST vers backend + écoute SSE pour le progress
-
 import { useState, useRef } from 'react';
 import { useAuth } from '@clerk/react';
 
@@ -16,85 +14,82 @@ export function useExport() {
 
   async function startExport(url, options = {}) {
     setIsExporting(true);
-    setProgress({ step: 'starting', progress: 0, message: 'Initialisation...' });
+    setProgress({ step: 'starting', progress: 5, message: 'Initializing...' });
     setError(null);
     setResult(null);
 
     try {
+      // Clerk v6 — getToken() sans argument retourne le JWT session
       const token = await getToken();
+      if (!token) throw new Error('Not authenticated — please sign in');
 
-      // 1. POST pour démarrer l'export
       const res = await fetch(`${BACKEND_URL}/api/export`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          url,
-          downloadAssets: options.downloadAssets ?? true,
-        }),
+        body: JSON.stringify({ url, downloadAssets: options.downloadAssets ?? true }),
       });
 
       if (res.status === 402) {
         const data = await res.json();
-        setError({ type: 'quota', upgradeUrl: data.upgradeUrl });
+        setError({ message: 'Export limit reached — upgrade to Pro', upgradeUrl: data.upgradeUrl });
         setIsExporting(false);
         return;
       }
-
+      if (res.status === 401) {
+        setError({ message: 'Authentication failed — please sign out and sign in again' });
+        setIsExporting(false);
+        return;
+      }
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'Erreur serveur');
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `Server error ${res.status}`);
       }
 
       const { exportId } = await res.json();
 
-      // 2. Ouvre le stream SSE pour les updates
-      const sseUrl = `${BACKEND_URL}/api/export/stream/${exportId}`;
-      const eventSource = new EventSource(sseUrl + `?token=${token}`);
+      // SSE stream — token passé en query string car EventSource ne supporte pas les headers
+      const sseUrl = `${BACKEND_URL}/api/export/stream/${exportId}?token=${encodeURIComponent(token)}`;
+      const eventSource = new EventSource(sseUrl);
       eventSourceRef.current = eventSource;
 
       eventSource.onmessage = (e) => {
-        const data = JSON.parse(e.data);
-        setProgress(data);
-
-        if (data.step === 'done') {
-          setResult(data);
-          setIsExporting(false);
-          eventSource.close();
-
-          // Trigger download automatique
-          const a = document.createElement('a');
-          a.href = data.downloadUrl;
-          a.download = url.replace(/^https?:\/\//, '').replace(/\//g, '-') + '.zip';
-          a.click();
-        }
-
-        if (data.step === 'error') {
-          setError({ type: 'export', message: data.error });
-          setIsExporting(false);
-          eventSource.close();
-        }
+        try {
+          const data = JSON.parse(e.data);
+          setProgress(data);
+          if (data.step === 'done') {
+            setResult(data);
+            setIsExporting(false);
+            eventSource.close();
+            // Trigger download
+            const a = document.createElement('a');
+            a.href = data.downloadUrl;
+            a.download = url.replace(/^https?:\/\//, '').replace(/\//g, '-') + '.zip';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+          }
+          if (data.step === 'error') {
+            setError({ message: data.error || 'Export failed' });
+            setIsExporting(false);
+            eventSource.close();
+          }
+        } catch {}
       };
 
       eventSource.onerror = () => {
-        setError({ type: 'connection', message: 'Connexion perdue. Réessaie.' });
+        setError({ message: 'Connection lost. Please try again.' });
         setIsExporting(false);
         eventSource.close();
       };
 
     } catch (err) {
-      setError({ type: 'export', message: err.message });
+      setError({ message: err.message });
       setIsExporting(false);
     }
   }
 
-  function cancelExport() {
-    eventSourceRef.current?.close();
-    setIsExporting(false);
-    setProgress(null);
-  }
-
-  return { startExport, cancelExport, isExporting, progress, result, error };
+  return { startExport, isExporting, progress, result, error };
 }

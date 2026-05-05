@@ -8,7 +8,7 @@ async function fetchAsset(url, ms = 10000) {
     const t = setTimeout(() => ctrl.abort(), ms);
     const res = await fetch(url, {
       signal: ctrl.signal,
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; hasnoia/1.0)' },
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HASNOIA/1.0)' },
     });
     clearTimeout(t);
     if (!res.ok) return null;

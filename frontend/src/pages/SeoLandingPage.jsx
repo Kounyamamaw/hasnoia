@@ -21,15 +21,15 @@ const VARIANTS = {
     content: [
       {
         h2: 'The problem with Framer hosting',
-        text: 'Framer requires a paid subscription (€18–€54/month) to keep your site live. Once you cancel, your site goes offline. hasnoia lets you export the entire site as static HTML — host it anywhere for free.',
+        text: 'Framer requires a paid subscription (€18–€54/month) to keep your site live. Once you cancel, your site goes offline. HASNOIA lets you export the entire site as static HTML — host it anywhere for free.',
       },
       {
         h2: 'Step 1: Publish your Framer site',
         text: 'Your Framer site needs to be published at a .framer.ai or .framer.website URL. If it\'s already live, proceed to step 2.',
       },
       {
-        h2: 'Step 2: Paste your URL into hasnoia',
-        text: 'Go to hasnoia.com, paste your Framer URL (e.g. yoursite.framer.ai), click Export. hasnoia loads your page, waits for React hydration, and captures the fully rendered HTML.',
+        h2: 'Step 2: Paste your URL into HASNOIA',
+        text: 'Go to hasnoia.com, paste your Framer URL (e.g. yoursite.framer.ai), click Export. HASNOIA loads your page, waits for React hydration, and captures the fully rendered HTML.',
       },
       {
         h2: 'Step 3: Download the ZIP',
@@ -44,20 +44,20 @@ const VARIANTS = {
   tostatic: {
     title: 'ToStatic Alternative — Export Framer Sites Without Extension',
     h1: 'The Best ToStatic Alternative in 2026',
-    description: 'hasnoia is a ToStatic alternative that requires no Chrome extension. Paste a Framer URL on our website and download a clean static export instantly.',
+    description: 'HASNOIA is a ToStatic alternative that requires no Chrome extension. Paste a Framer URL on our website and download a clean static export instantly.',
     keyword: 'tostatic alternative',
     content: [
       {
-        h2: 'ToStatic vs hasnoia',
-        text: 'ToStatic requires installing a Chrome extension — a friction point many users skip. hasnoia works directly in your browser: paste a URL, get a ZIP. No installation.',
+        h2: 'ToStatic vs HASNOIA',
+        text: 'ToStatic requires installing a Chrome extension — a friction point many users skip. HASNOIA works directly in your browser: paste a URL, get a ZIP. No installation.',
       },
       {
         h2: 'SEO improvements',
-        text: 'hasnoia removes the framer-search-index meta tag (which shows "Framer" in Google results), the generator meta, the canonical pointing to framer.app, and all og:url tags. ToStatic does not clean all of these.',
+        text: 'HASNOIA removes the framer-search-index meta tag (which shows "Framer" in Google results), the generator meta, the canonical pointing to framer.app, and all og:url tags. ToStatic does not clean all of these.',
       },
       {
         h2: 'Pricing comparison',
-        text: 'ToStatic charges $9–$29/month. hasnoia offers 1 free export/month and Pro at €9/month — same price for the base plan, with more SEO features included.',
+        text: 'ToStatic charges $9–$29/month. HASNOIA offers 1 free export/month and Pro at €9/month — same price for the base plan, with more SEO features included.',
       },
     ],
   },
@@ -73,7 +73,7 @@ const VARIANTS = {
       },
       {
         h2: 'Export your Framer site',
-        text: 'Use hasnoia to export your Framer site to a static ZIP. All pages, images, and fonts are included. The export takes under 30 seconds.',
+        text: 'Use HASNOIA to export your Framer site to a static ZIP. All pages, images, and fonts are included. The export takes under 30 seconds.',
       },
       {
         h2: 'Deploy on Vercel in 60 seconds',
@@ -84,7 +84,7 @@ const VARIANTS = {
   badge: {
     title: 'Remove Framer Badge — From Your Exported Site',
     h1: 'How to Remove the Framer Badge',
-    description: 'The Framer "Built with Framer" badge appears on free and some paid plans. hasnoia automatically removes it when you export your site.',
+    description: 'The Framer "Built with Framer" badge appears on free and some paid plans. HASNOIA automatically removes it when you export your site.',
     keyword: 'remove framer badge',
     content: [
       {
@@ -92,8 +92,8 @@ const VARIANTS = {
         text: 'Framer adds a badge to all sites on free plans and some paid tiers. It links back to framer.com. For client work or professional sites, this looks unprofessional.',
       },
       {
-        h2: 'hasnoia removes it automatically',
-        text: 'When you export with hasnoia, we inject CSS that hides #__framer-badge-container with display:none. The badge is invisible in the exported version.',
+        h2: 'HASNOIA removes it automatically',
+        text: 'When you export with HASNOIA, we inject CSS that hides #__framer-badge-container with display:none. The badge is invisible in the exported version.',
       },
       {
         h2: 'SEO cleanup included',
@@ -109,11 +109,11 @@ const VARIANTS = {
     content: [
       {
         h2: 'The Framer subscription trap',
-        text: 'Framer charges €18–€54/month just to keep your site online. Cancel the subscription and the site goes dark immediately. hasnoia breaks this dependency.',
+        text: 'Framer charges €18–€54/month just to keep your site online. Cancel the subscription and the site goes dark immediately. HASNOIA breaks this dependency.',
       },
       {
         h2: 'Export once, host forever',
-        text: 'Export your Framer site with hasnoia. You get a self-contained ZIP with all assets. Deploy it on Vercel (free), Netlify (free), or any web server — and never pay Framer again.',
+        text: 'Export your Framer site with HASNOIA. You get a self-contained ZIP with all assets. Deploy it on Vercel (free), Netlify (free), or any web server — and never pay Framer again.',
       },
       {
         h2: 'What is included in the export',
@@ -135,7 +135,7 @@ export default function SeoLandingPage({ variant }) {
   return (
     <div className="min-h-screen bg-[#080808] text-white font-mono">
       <nav className="flex items-center justify-between px-8 py-5 border-b border-white/5">
-        <Link to="/" className="text-sm font-bold text-white tracking-widest">hasnoia</Link>
+        <Link to="/" className="text-sm font-bold text-white tracking-widest">FRAMEOUT</Link>
         <Link to="/" className="text-xs text-white/40 hover:text-white/70 transition-colors">
           Try the tool →
         </Link>

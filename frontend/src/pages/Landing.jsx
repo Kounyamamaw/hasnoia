@@ -1,224 +1,222 @@
-// frontend/src/pages/Landing.jsx
-// Landing page hasnoia — design dark, minimaliste, premium
-// Inspired par la DA de The Game (1997) et les outils dev modernes
-
-import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { SignInButton, useUser } from '@clerk/react';
+// frontend/src/pages/Landing.jsx — HASNOIA Export Tool
+// Light theme, full English, clean design
+import { useState } from 'react';
+import { SignInButton, useUser, UserButton } from '@clerk/react';
 import { useExport } from '../hooks/useExport';
-
-const SUPPORTED = ['framer.app', 'framer.ai', 'framer.website', 'webflow.io', 'lovable.app'];
 
 export default function Landing() {
   const [url, setUrl] = useState('');
   const [error, setError] = useState('');
-  const { isSignedIn } = useUser();
-  const navigate = useNavigate();
-  const inputRef = useRef(null);
-  const { startExport, progress, isExporting } = useExport();
-
-  function validateUrl(val) {
-    try {
-      const u = new URL(val.startsWith('http') ? val : 'https://' + val);
-      return u.hostname;
-    } catch { return null; }
-  }
+  const { isSignedIn, user } = useUser();
+  const { startExport, isExporting, progress, result, error: exportError } = useExport();
 
   async function handleExport() {
     setError('');
-    const hostname = validateUrl(url);
-    if (!hostname) return setError('URL invalide');
-
-    const normalized = url.startsWith('http') ? url : 'https://' + url;
-
-    if (!isSignedIn) {
-      // Sauvegarde l'URL et redirige vers signup
-      sessionStorage.setItem('pendingUrl', normalized);
-      return;
-    }
-
+    const clean = url.trim().replace(/^https?:\/\//, '');
+    if (!clean) return setError('Please enter a Framer URL');
+    const normalized = 'https://' + clean;
     await startExport(normalized);
   }
 
-  return (
-    <div className="min-h-screen bg-[#080808] text-white font-mono overflow-x-hidden">
-      {/* Grain texture overlay */}
-      <div className="fixed inset-0 pointer-events-none z-50 opacity-[0.03]"
-        style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\'/%3E%3C/svg%3E")' }}
-      />
+  const comparisonRows = [
+    ['Requires Chrome extension', true, false],
+    ['Removes Framer badge',      false, true],
+    ['Cleans SEO meta tags',      false, true],
+    ['Removes pixel tracking',    false, true],
+    ['Multi-page export',         true, true],
+    ['Local asset download',      true, true],
+  ];
 
-      {/* Nav */}
-      <nav className="flex items-center justify-between px-8 py-5 border-b border-white/5">
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-white/30 tracking-[0.3em] uppercase">Frame</span>
-          <span className="w-px h-3 bg-white/20" />
-          <span className="text-xs text-white/60 tracking-[0.3em] uppercase font-bold">Out</span>
-        </div>
-        <div className="flex items-center gap-6">
-          <a href="#pricing" className="text-xs text-white/40 hover:text-white/70 transition-colors tracking-wider">Pricing</a>
-          {isSignedIn ? (
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="text-xs text-white/40 hover:text-white/70 transition-colors tracking-wider"
-            >
-              Dashboard →
-            </button>
-          ) : (
-            <SignInButton mode="modal">
-              <button className="text-xs text-white/40 hover:text-white/70 transition-colors tracking-wider">
-                Connexion
-              </button>
-            </SignInButton>
-          )}
+  const features = [
+    { emoji: '⚡', title: 'No extension needed', desc: 'Works directly in your browser. Paste any Framer URL, download a clean ZIP in seconds.' },
+    { emoji: '🔍', title: 'Full SEO cleanup', desc: 'Removes framer-search-index, Framer badge, canonical to framer.app, og:url tags, and tracking pixels.' },
+    { emoji: '🚀', title: 'Deploy anywhere free', desc: 'Host your exported site on Vercel or Netlify for €0/month. No Framer subscription ever again.' },
+  ];
+
+  return (
+    <div style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif', background: '#fff', color: '#111', minHeight: '100vh' }}>
+
+      {/* ── Navbar ── */}
+      <nav style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(12px)', borderBottom: '1px solid #f0f0f0' }}>
+        <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 24px', height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 28, height: 28, background: '#4f46e5', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: 13, fontWeight: 900 }}>H</div>
+            <span style={{ fontWeight: 800, fontSize: 15, letterSpacing: '-0.3px' }}>HASNOIA</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+            <a href="#features" style={{ fontSize: 13, color: '#666', textDecoration: 'none' }}>Features</a>
+            <a href="#pricing" style={{ fontSize: 13, color: '#666', textDecoration: 'none' }}>Pricing</a>
+            {isSignedIn ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{ fontSize: 13, color: '#666' }}>Hi, {user.firstName || 'there'}</span>
+                <UserButton afterSignOutUrl="/" />
+              </div>
+            ) : (
+              <SignInButton mode="modal">
+                <button style={{ fontSize: 13, background: '#4f46e5', color: 'white', border: 'none', borderRadius: 8, padding: '7px 16px', fontWeight: 600, cursor: 'pointer' }}>
+                  Sign in
+                </button>
+              </SignInButton>
+            )}
+          </div>
         </div>
       </nav>
 
-      {/* Hero */}
-      <main className="flex flex-col items-center justify-center min-h-[80vh] px-6 py-20">
-
-        {/* Badge tendance */}
-        <div className="mb-8 flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-          <span className="text-xs text-white/50 tracking-widest uppercase">Framer Export · Google Trends 100/100</span>
+      {/* ── Hero ── */}
+      <section style={{ maxWidth: 960, margin: '0 auto', padding: '72px 24px 48px', textAlign: 'center' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#eef2ff', color: '#4f46e5', fontSize: 12, fontWeight: 600, padding: '6px 14px', borderRadius: 999, marginBottom: 28, border: '1px solid #e0e7ff' }}>
+          <span style={{ width: 6, height: 6, background: '#4f46e5', borderRadius: '50%', animation: 'pulse 2s infinite' }} />
+          "framer export" — Google Trends 100/100 · May 2026
         </div>
 
-        {/* Titre */}
-        <h1 className="text-center mb-4 leading-[0.95] tracking-tight">
-          <span className="block text-5xl md:text-7xl font-bold text-white">
-            Export your
-          </span>
-          <span className="block text-5xl md:text-7xl font-bold bg-gradient-to-r from-white to-white/20 bg-clip-text text-transparent">
-            Framer site.
-          </span>
-          <span className="block text-5xl md:text-7xl font-bold text-white/20">
-            Free forever.
-          </span>
+        <h1 style={{ fontSize: 56, fontWeight: 800, lineHeight: 1.1, letterSpacing: '-1.5px', margin: '0 0 20px' }}>
+          Export any Framer site<br />
+          <span style={{ color: '#4f46e5' }}>without a subscription</span>
         </h1>
 
-        <p className="mt-6 text-center text-sm text-white/30 max-w-md leading-relaxed tracking-wide">
-          Colle une URL Framer. Reçois un ZIP propre en 10 secondes.
-          <br />Zéro extension. Zéro abonnement Framer. SEO clean garanti.
+        <p style={{ fontSize: 17, color: '#666', maxWidth: 480, margin: '0 auto 40px', lineHeight: 1.6 }}>
+          Paste a Framer URL. Get a clean static ZIP in seconds.
+          No Chrome extension. No monthly fee. Framer badge removed automatically.
         </p>
 
-        {/* Input principal */}
-        <div className="mt-12 w-full max-w-xl">
-          <div className={`flex gap-0 bg-white/5 border rounded-xl overflow-hidden transition-all duration-200 ${
-            error ? 'border-red-500/50' : 'border-white/10 focus-within:border-white/30'
-          }`}>
-            <div className="flex items-center px-4 border-r border-white/10">
-              <span className="text-white/20 text-xs font-mono">https://</span>
-            </div>
+        {/* ── Export input ── */}
+        <div style={{ maxWidth: 500, margin: '0 auto' }}>
+          <div style={{ display: 'flex', border: `2px solid ${error ? '#f87171' : '#e5e7eb'}`, borderRadius: 12, overflow: 'hidden', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.07)', transition: 'border-color 0.2s' }}>
             <input
-              ref={inputRef}
               type="text"
               value={url}
               onChange={e => { setUrl(e.target.value); setError(''); }}
               onKeyDown={e => e.key === 'Enter' && handleExport()}
-              placeholder="votre-site.framer.ai"
-              className="flex-1 bg-transparent px-4 py-4 text-sm text-white/80 placeholder-white/20 outline-none font-mono tracking-wide"
+              placeholder="yoursite.framer.ai"
+              style={{ flex: 1, padding: '14px 16px', fontSize: 14, border: 'none', outline: 'none', color: '#111', background: 'transparent' }}
             />
             {!isSignedIn ? (
-              <SignInButton mode="modal" afterSignInUrl="/?exported=1">
-                <button
-                  onClick={() => sessionStorage.setItem('pendingUrl', url)}
-                  className="px-6 py-4 bg-white text-black text-xs font-bold tracking-widest uppercase hover:bg-white/90 transition-colors"
-                >
-                  Export →
+              <SignInButton mode="modal">
+                <button onClick={() => sessionStorage.setItem('pendingUrl', url)} style={{ padding: '14px 22px', background: '#4f46e5', color: 'white', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                  Export free →
                 </button>
               </SignInButton>
             ) : (
               <button
                 onClick={handleExport}
-                disabled={isExporting || !url}
-                className="px-6 py-4 bg-white text-black text-xs font-bold tracking-widest uppercase hover:bg-white/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                disabled={isExporting || !url.trim()}
+                style={{ padding: '14px 22px', background: '#4f46e5', color: 'white', border: 'none', fontSize: 13, fontWeight: 700, cursor: isExporting ? 'not-allowed' : 'pointer', opacity: isExporting ? 0.5 : 1, whiteSpace: 'nowrap' }}
               >
-                {isExporting ? '...' : 'Export →'}
+                {isExporting ? 'Exporting...' : 'Export free →'}
               </button>
             )}
           </div>
-
-          {error && (
-            <p className="mt-2 text-xs text-red-400/80 pl-4">{error}</p>
-          )}
-
-          <p className="mt-3 text-center text-xs text-white/20 tracking-wider">
-            Supporte · {SUPPORTED.map(s => s.split('.')[0]).join(' · ')}
-          </p>
+          {error && <p style={{ marginTop: 8, fontSize: 12, color: '#ef4444', textAlign: 'left' }}>{error}</p>}
+          {exportError && <p style={{ marginTop: 8, fontSize: 12, color: '#ef4444', textAlign: 'left' }}>{exportError.message || String(exportError)}</p>}
+          <p style={{ marginTop: 10, fontSize: 12, color: '#aaa' }}>Supports · framer.ai · framer.app · framer.website</p>
         </div>
 
         {/* Progress */}
         {isExporting && progress && (
-          <div className="mt-8 w-full max-w-xl">
-            <div className="flex justify-between mb-2">
-              <span className="text-xs text-white/40 tracking-wider">{progress.message}</span>
-              <span className="text-xs text-white/30">{progress.progress}%</span>
+          <div style={{ maxWidth: 500, margin: '20px auto 0', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, textAlign: 'left' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+              <span style={{ fontSize: 13, color: '#555' }}>{progress.message || 'Processing...'}</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#4f46e5' }}>{progress.progress || 0}%</span>
             </div>
-            <div className="h-px bg-white/10 rounded overflow-hidden">
-              <div
-                className="h-full bg-white/60 transition-all duration-500"
-                style={{ width: `${progress.progress}%` }}
-              />
+            <div style={{ height: 4, background: '#e5e7eb', borderRadius: 4, overflow: 'hidden' }}>
+              <div style={{ height: '100%', background: '#4f46e5', borderRadius: 4, width: `${progress.progress || 0}%`, transition: 'width 0.4s ease' }} />
             </div>
           </div>
         )}
 
-        {/* Comparaison ToStatic */}
-        <div className="mt-20 grid grid-cols-3 gap-px bg-white/5 border border-white/5 rounded-xl overflow-hidden max-w-xl w-full">
-          {[
-            ['Installation', '❌ Extension Chrome', '✓ Aucune'],
-            ['SEO Framer', '❌ Pas nettoyé', '✓ Supprimé'],
-            ['Pixel tracking', '❌ Conservé', '✓ Retiré'],
-          ].map(([label, them, us]) => (
-            <div key={label} className="bg-[#0c0c0c] p-4">
-              <div className="text-xs text-white/20 tracking-wider uppercase mb-3">{label}</div>
-              <div className="text-xs text-red-400/60 mb-1">{them}</div>
-              <div className="text-xs text-green-400/80">{us}</div>
+        {/* Success */}
+        {result && (
+          <div style={{ maxWidth: 500, margin: '20px auto 0', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ fontSize: 20 }}>✅</span>
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: '#166534' }}>Export complete! Downloading...</div>
+              <div style={{ fontSize: 12, color: '#16a34a', marginTop: 2 }}>
+                {result.stats?.pages} page(s) · {result.stats?.assets} assets · {result.stats?.sizeKb}kb
+              </div>
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* ── Comparison table ── */}
+      <section id="features" style={{ maxWidth: 720, margin: '0 auto', padding: '40px 24px' }}>
+        <h2 style={{ textAlign: 'center', fontSize: 26, fontWeight: 800, marginBottom: 32, letterSpacing: '-0.5px' }}>Better than ToStatic</h2>
+        <div style={{ border: '1px solid #e5e7eb', borderRadius: 16, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+          {/* Header row */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px 120px', background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+            <div style={{ padding: '12px 16px', fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Feature</div>
+            <div style={{ padding: '12px 16px', fontSize: 13, fontWeight: 700, color: '#9ca3af', textAlign: 'center', borderLeft: '1px solid #e5e7eb' }}>ToStatic</div>
+            <div style={{ padding: '12px 16px', fontSize: 13, fontWeight: 800, color: '#fff', textAlign: 'center', background: '#4f46e5' }}>HASNOIA</div>
+          </div>
+          {comparisonRows.map(([label, them, us], i) => (
+            <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 120px 120px', borderBottom: i < comparisonRows.length - 1 ? '1px solid #f3f4f6' : 'none', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+              <div style={{ padding: '13px 16px', fontSize: 14, color: '#374151' }}>{label}</div>
+              <div style={{ padding: '13px 16px', textAlign: 'center', borderLeft: '1px solid #f3f4f6' }}>
+                {typeof them === 'boolean'
+                  ? (them ? <span style={{ color: '#ef4444', fontSize: 16 }}>✕</span> : <span style={{ color: '#22c55e', fontSize: 16 }}>✓</span>)
+                  : <span style={{ fontSize: 12, color: '#ef4444' }}>{them}</span>
+                }
+              </div>
+              <div style={{ padding: '13px 16px', textAlign: 'center', background: '#eef2ff' }}>
+                {us ? <span style={{ color: '#4f46e5', fontSize: 16, fontWeight: 700 }}>✓</span> : <span style={{ color: '#ef4444', fontSize: 16 }}>✕</span>}
+              </div>
             </div>
           ))}
         </div>
-      </main>
+      </section>
 
-      {/* Pricing */}
-      <section id="pricing" className="py-20 px-6 border-t border-white/5">
-        <h2 className="text-center text-xs text-white/20 tracking-[0.4em] uppercase mb-12">Pricing</h2>
-        <div className="flex flex-col md:flex-row gap-4 justify-center max-w-lg mx-auto">
-          {/* Free */}
-          <div className="flex-1 bg-white/3 border border-white/8 rounded-xl p-6">
-            <div className="text-xs text-white/30 tracking-widest uppercase mb-4">Free</div>
-            <div className="text-4xl font-bold text-white mb-1">0€</div>
-            <div className="text-xs text-white/20 mb-6">pour toujours</div>
-            <ul className="space-y-2 text-xs text-white/40">
-              <li>→ 1 export / mois</li>
-              <li>→ Page unique</li>
-              <li>→ SEO clean</li>
-            </ul>
-          </div>
-          {/* Pro */}
-          <div className="flex-1 bg-white border border-white rounded-xl p-6 relative">
-            <div className="absolute -top-2.5 right-4 bg-black text-white text-xs px-3 py-0.5 rounded-full tracking-widest">POPULAIRE</div>
-            <div className="text-xs text-black/40 tracking-widest uppercase mb-4">Pro</div>
-            <div className="text-4xl font-bold text-black mb-1">9€</div>
-            <div className="text-xs text-black/30 mb-6">par mois</div>
-            <ul className="space-y-2 text-xs text-black/60">
-              <li>→ Exports illimités</li>
-              <li>→ Multi-pages (sitemap)</li>
-              <li>→ Assets locaux</li>
-              <li>→ Historique exports</li>
-            </ul>
-            <a
-              href={import.meta.env.VITE_LEMON_SQUEEZY_URL}
-              className="mt-6 block text-center bg-black text-white text-xs py-3 rounded-lg tracking-widest uppercase hover:bg-black/80 transition-colors"
-            >
-              Commencer →
-            </a>
+      {/* ── Feature cards ── */}
+      <section style={{ maxWidth: 960, margin: '0 auto', padding: '20px 24px 60px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16 }}>
+          {features.map((f, i) => (
+            <div key={i} style={{ background: '#f9fafb', borderRadius: 16, padding: 24, border: '1px solid #f0f0f0' }}>
+              <div style={{ fontSize: 28, marginBottom: 12 }}>{f.emoji}</div>
+              <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 8, color: '#111' }}>{f.title}</h3>
+              <p style={{ fontSize: 13, color: '#666', lineHeight: 1.6, margin: 0 }}>{f.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Pricing ── */}
+      <section id="pricing" style={{ background: '#f9fafb', padding: '60px 24px' }}>
+        <div style={{ maxWidth: 600, margin: '0 auto' }}>
+          <h2 style={{ textAlign: 'center', fontSize: 26, fontWeight: 800, marginBottom: 8, letterSpacing: '-0.5px' }}>Simple pricing</h2>
+          <p style={{ textAlign: 'center', fontSize: 14, color: '#888', marginBottom: 36 }}>No hidden fees. Cancel anytime.</p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            {/* Free */}
+            <div style={{ background: '#fff', borderRadius: 20, border: '2px solid #e5e7eb', padding: 24 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>Free</div>
+              <div style={{ fontSize: 36, fontWeight: 800, color: '#111', marginBottom: 4 }}>€0</div>
+              <div style={{ fontSize: 13, color: '#aaa', marginBottom: 20 }}>forever</div>
+              {['1 export / month', 'Single page', 'SEO cleaned', 'Badge removed'].map(f => (
+                <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, fontSize: 13, color: '#444' }}>
+                  <span style={{ color: '#22c55e', fontWeight: 700 }}>✓</span> {f}
+                </div>
+              ))}
+            </div>
+            {/* Pro */}
+            <div style={{ background: '#4f46e5', borderRadius: 20, border: '2px solid #4f46e5', padding: 24, position: 'relative' }}>
+              <div style={{ position: 'absolute', top: -12, right: 16, background: '#fbbf24', color: '#92400e', fontSize: 11, fontWeight: 800, padding: '3px 10px', borderRadius: 999 }}>POPULAR</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#a5b4fc', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>Pro</div>
+              <div style={{ fontSize: 36, fontWeight: 800, color: '#fff', marginBottom: 4 }}>€9</div>
+              <div style={{ fontSize: 13, color: '#a5b4fc', marginBottom: 20 }}>per month</div>
+              {['Unlimited exports', 'Multi-page sitemap', 'Local assets', 'Export history'].map(f => (
+                <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, fontSize: 13, color: '#e0e7ff' }}>
+                  <span style={{ color: '#a5b4fc', fontWeight: 700 }}>✓</span> {f}
+                </div>
+              ))}
+              <a href={import.meta.env.VITE_LEMON_SQUEEZY_URL || '#'} style={{ display: 'block', marginTop: 20, background: '#fff', color: '#4f46e5', borderRadius: 10, padding: '10px 0', textAlign: 'center', fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>
+                Get Pro →
+              </a>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-8 px-6 border-t border-white/5 flex items-center justify-between">
-        <span className="text-xs text-white/15 tracking-widest">hasnoia © 2026</span>
-        <span className="text-xs text-white/15 tracking-widest">Made in Paris</span>
+      {/* ── Footer ── */}
+      <footer style={{ borderTop: '1px solid #f0f0f0', padding: '24px', textAlign: 'center' }}>
+        <span style={{ fontSize: 12, color: '#ccc' }}>© 2026 HASNOIA · Made in Paris</span>
       </footer>
     </div>
   );

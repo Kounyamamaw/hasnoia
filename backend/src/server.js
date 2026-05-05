@@ -40,7 +40,7 @@ app.use('/health', healthRoutes);
 app.use('/api/export', exportRoutes);
 
 app.listen(PORT, () => {
-  console.log(`[hasnoia] Backend démarré sur le port ${PORT}`);
+  console.log(`[HASNOIA] Backend démarré sur le port ${PORT}`);
 });
 
 module.exports = app;

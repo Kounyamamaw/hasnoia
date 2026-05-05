@@ -1,4 +1,4 @@
-# FrameOut — Architecture Complète
+# HASNOIA — Architecture Complète
 
 ## Vision
 Site web (pas d'extension) : colle une URL Framer → ZIP propre téléchargé en 10 secondes.
@@ -22,7 +22,7 @@ Différenciation vs ToStatic : zéro installation, SEO clean garanti, multi-plat
 ## Structure des fichiers
 
 ```
-frameout/
+hasnoia/
 ├── frontend/                          # Deploy sur Vercel
 │   ├── src/
 │   │   ├── components/
@@ -41,7 +41,7 @@ frameout/
 │   │       ├── api.js                 # Calls vers backend Railway
 │   │       └── clerk.js              # Config auth Clerk
 │   ├── .env.local
-│   │   ├── VITE_BACKEND_URL=https://frameout-backend.railway.app
+│   │   ├── VITE_BACKEND_URL=https://hasnoia-backend.railway.app
 │   │   ├── VITE_CLERK_PUBLISHABLE_KEY=pk_...
 │   │   └── VITE_LEMON_SQUEEZY_URL=https://...
 │   ├── index.html
@@ -196,7 +196,7 @@ vercel --prod
 ```
 
 ### UptimeRobot (keepalive)
-- URL: https://frameout-backend.railway.app/health
+- URL: https://hasnoia-backend.railway.app/health
 - Intervalle: 5 minutes
 - Type: HTTP(S)
 - Gratuit, zéro config
