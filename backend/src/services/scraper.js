@@ -1,152 +1,160 @@
-// backend/src/services/scraper.js
-// Puppeteer headless — charge l'URL Framer, attend l'hydratation React complète
-// Retourne le HTML hydraté + liste des pages du sitemap
-
 const puppeteer = require('puppeteer');
 
-// Pool de browser — on réutilise la même instance pour éviter
-// de lancer/tuer Chrome à chaque export (coûteux en RAM)
 let browserInstance = null;
 
 async function getBrowser() {
-  if (!browserInstance || !browserInstance.connected) {
-    browserInstance = await puppeteer.launch({
-      headless: 'new',
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',  // Critique sur Railway (shared memory limité)
-        '--disable-gpu',
-        '--no-first-run',
-        '--disable-extensions',
-        '--disable-background-networking',
-        '--single-process',         // Réduit la RAM sur Railway
-      ],
-    });
-    console.log('[Scraper] Navigateur Chromium démarré');
+  if (browserInstance) {
+    try {
+      await browserInstance.version(); // test si encore vivant
+      return browserInstance;
+    } catch {
+      browserInstance = null;
+    }
   }
+
+  console.log('[Scraper] Lancement Chromium...');
+  browserInstance = await puppeteer.launch({
+    headless: 'new',
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-gpu',
+      '--disable-software-rasterizer',
+      '--no-first-run',
+      '--no-zygote',
+      '--single-process',
+      '--disable-extensions',
+      '--disable-background-networking',
+      '--disable-default-apps',
+      '--disable-sync',
+      '--disable-translate',
+      '--hide-scrollbars',
+      '--mute-audio',
+      '--safebrowsing-disable-auto-update',
+      '--ignore-certificate-errors',
+      '--ignore-ssl-errors',
+      '--ignore-certificate-errors-skip-list',
+      // Contourne les restrictions réseau Railway
+      '--disable-web-security',
+      '--allow-running-insecure-content',
+    ],
+    ignoreHTTPSErrors: true,
+  });
+
+  browserInstance.on('disconnected', () => {
+    console.log('[Scraper] Browser disconnected');
+    browserInstance = null;
+  });
+
+  console.log('[Scraper] Chromium OK');
   return browserInstance;
 }
 
-// Scrape une URL et retourne son HTML hydraté
 async function scrapePage(url, onProgress) {
   const browser = await getBrowser();
   const page = await browser.newPage();
 
   try {
-    // Bloque les ressources inutiles pour aller plus vite
-    await page.setRequestInterception(true);
-    page.on('request', (req) => {
-      const type = req.resourceType();
-      // On laisse passer HTML, scripts (runtime Framer), fonts, images
-      // On bloque les analytics, pixels tracking, etc.
-      if (['media'].includes(type)) {
-        req.abort();
-      } else {
-        req.continue();
-      }
-    });
-
     await page.setViewport({ width: 1440, height: 900 });
-    await page.setUserAgent(
-      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/120.0 Safari/537.36'
-    );
+    await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
 
-    onProgress?.({ step: 'loading', message: 'Chargement de la page...' });
-
-    // Charge la page et attend que le réseau soit idle
-    // networkidle0 = 0 requêtes réseau pendant 500ms consécutives
-    await page.goto(url, {
-      waitUntil: 'networkidle0',
-      timeout: 30000,
+    // Extra headers pour ressembler à un vrai browser
+    await page.setExtraHTTPHeaders({
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
     });
 
-    // Attend encore 3 secondes pour l'hydratation React de Framer
-    // Le runtime Framer charge des modules .mjs async — networkidle0 ne suffit pas
-    await new Promise(r => setTimeout(r, 3000));
+    // Bloque uniquement les vidéos pour aller plus vite
+    await page.setRequestInterception(true);
+    page.on('request', req => {
+      if (req.resourceType() === 'media') req.abort();
+      else req.continue();
+    });
 
-    onProgress?.({ step: 'hydrated', message: 'Page hydratée' });
+    onProgress?.({ step: 'loading', message: 'Loading page...', progress: 15 });
+    console.log('[Scraper] Navigating to:', url);
 
-    // Récupère le HTML complet après hydratation
+    // domcontentloaded est plus rapide et moins strict que networkidle0
+    // Framer hydrate après donc on attend manuellement
+    await page.goto(url, {
+      waitUntil: 'domcontentloaded',
+      timeout: 45000,
+    });
+
+    onProgress?.({ step: 'waiting', message: 'Waiting for Framer hydration...', progress: 30 });
+
+    // Attend que le contenu Framer soit chargé
+    // On attend soit networkidle soit 8 secondes max
+    try {
+      await Promise.race([
+        page.waitForNetworkIdle({ idleTime: 1000, timeout: 10000 }),
+        new Promise(r => setTimeout(r, 8000)),
+      ]);
+    } catch {}
+
+    // 2s de plus pour l'hydratation React
+    await new Promise(r => setTimeout(r, 2000));
+
+    onProgress?.({ step: 'scraped', message: 'Page scraped', progress: 40 });
+
     const html = await page.evaluate(() => document.documentElement.outerHTML);
     const title = await page.title();
-    const finalUrl = page.url();
 
-    return { html, title, url: finalUrl };
+    console.log('[Scraper] OK:', url, 'HTML size:', html.length);
+    return { html, title, url: page.url() };
 
   } finally {
-    await page.close();
+    await page.close().catch(() => {});
   }
 }
 
-// Scrape le sitemap.xml d'un site pour récupérer toutes les pages
 async function scrapeSitemap(siteUrl) {
   try {
     const base = new URL(siteUrl);
     const sitemapUrl = `${base.origin}/sitemap.xml`;
 
-    const browser = await getBrowser();
-    const page = await browser.newPage();
+    console.log('[Scraper] Fetching sitemap:', sitemapUrl);
 
-    try {
-      const response = await page.goto(sitemapUrl, {
-        waitUntil: 'domcontentloaded',
-        timeout: 10000,
-      });
+    // Utilise fetch direct plutôt que Puppeteer pour le sitemap
+    const res = await fetch(sitemapUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HASNOIA/1.0)' },
+      signal: AbortSignal.timeout(10000),
+    });
 
-      if (!response.ok()) return [];
+    if (!res.ok) return [];
+    const text = await res.text();
+    if (!text.includes('<urlset')) return [];
 
-      const content = await page.content();
-      if (!content.includes('<urlset')) return [];
-
-      const urls = [];
-      const matches = content.matchAll(/<loc>([^<]+)<\/loc>/g);
-      for (const m of matches) {
-        const u = m[1].trim();
-        if (u !== siteUrl && u.startsWith(base.origin)) {
-          urls.push(u);
-        }
-      }
-
-      return urls.slice(0, 20); // Max 20 pages
-
-    } finally {
-      await page.close();
+    const urls = [];
+    for (const m of text.matchAll(/<loc>([^<]+)<\/loc>/g)) {
+      const u = m[1].trim();
+      if (u !== siteUrl && u.startsWith(base.origin)) urls.push(u);
     }
-  } catch {
+    console.log('[Scraper] Sitemap found', urls.length, 'pages');
+    return urls.slice(0, 15);
+  } catch (e) {
+    console.log('[Scraper] Sitemap error:', e.message);
     return [];
   }
 }
 
-// Scrape plusieurs pages en séquence (pas en parallèle pour économiser la RAM)
 async function scrapePages(urls, onProgress) {
   const pages = [];
   for (let i = 0; i < urls.length; i++) {
     try {
-      onProgress?.({
-        step: 'scraping_page',
-        message: `Page ${i + 1}/${urls.length}`,
-        progress: Math.round(30 + (i / urls.length) * 20),
-      });
+      onProgress?.({ step: 'scraping_page', message: `Page ${i+1}/${urls.length}`, progress: 40 + Math.round((i/urls.length)*20) });
       const result = await scrapePage(urls[i]);
-      const u = new URL(urls[i]);
-      pages.push({ ...result, path: u.pathname });
-    } catch (err) {
-      console.warn(`[Scraper] Impossible de scraper ${urls[i]}:`, err.message);
+      pages.push({ ...result, path: new URL(urls[i]).pathname });
+    } catch (e) {
+      console.warn('[Scraper] Page failed:', urls[i], e.message);
     }
   }
   return pages;
 }
 
-// Ferme le browser proprement (appelé sur SIGTERM)
-async function closeBrowser() {
-  if (browserInstance) {
-    await browserInstance.close();
-    browserInstance = null;
-  }
-}
+process.on('SIGTERM', async () => {
+  if (browserInstance) await browserInstance.close().catch(() => {});
+});
 
-process.on('SIGTERM', closeBrowser);
-process.on('SIGINT', closeBrowser);
-
-module.exports = { scrapePage, scrapeSitemap, scrapePages, closeBrowser };
+module.exports = { scrapePage, scrapeSitemap, scrapePages };
