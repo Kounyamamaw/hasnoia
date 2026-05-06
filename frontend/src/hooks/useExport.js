@@ -29,7 +29,7 @@ export function useExport() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ url, downloadAssets: options.downloadAssets ?? true }),
+        body: JSON.stringify({ url, downloadAssets: options.downloadAssets ?? false }),
       });
 
       if (res.status === 402) {
