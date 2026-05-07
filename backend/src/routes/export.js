@@ -167,3 +167,25 @@ async function runExport({ exportId, url, userId, shouldDownloadAssets, supabase
 }
 
 module.exports = router;
+
+// GET /api/export/stats — retourne le quota et l'historique de l'user
+router.get('/stats', requireAuth, async (req, res) => {
+  const supabase = getSupabase();
+  const user = req.user;
+
+  const { data: exports } = await supabase
+    .from('exports')
+    .select('id, url, status, pages_count, assets_count, zip_size_kb, created_at')
+    .eq('user_id', req.userId)
+    .order('created_at', { ascending: false })
+    .limit(20);
+
+  const quota = user.plan === 'pro' || user.plan === 'admin' ? null : 1;
+
+  res.json({
+    plan: user.plan,
+    exportsThisMonth: user.exports_this_month || 0,
+    quota,
+    exports: exports || [],
+  });
+});
