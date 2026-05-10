@@ -17,6 +17,17 @@ function verifyStripeSignature(payload, sigHeader, secret) {
   return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
 }
 
+// Récupère l'email depuis Stripe si pas dans l'événement
+async function getCustomerEmail(customerId) {
+  try {
+    const res = await fetch(`https://api.stripe.com/v1/customers/${customerId}`, {
+      headers: { 'Authorization': `Bearer ${process.env.STRIPE_SECRET_KEY}` }
+    });
+    const customer = await res.json();
+    return customer.email || null;
+  } catch { return null; }
+}
+
 router.post('/', async (req, res) => {
   const sig = req.headers['stripe-signature'];
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -28,32 +39,44 @@ router.post('/', async (req, res) => {
     if (!verifyStripeSignature(body, sig, secret)) throw new Error('Invalid signature');
     event = JSON.parse(body);
   } catch (err) {
+    console.error('[Webhook] Error:', err.message);
     return res.status(401).json({ error: err.message });
   }
 
   const supabase = getSupabase();
   const sub = event.data?.object;
-  const email = sub?.customer_email || null;
-  const customerId = sub?.customer?.toString() || null;
-  const subId = sub?.id || null;
+  const customerId = sub?.customer?.toString();
 
-  console.log('[Webhook]', event.type, email || customerId);
+  // Récupère l'email — soit dans l'événement, soit via l'API Stripe
+  let email = sub?.customer_email || null;
+  if (!email && customerId) {
+    email = await getCustomerEmail(customerId);
+  }
+
+  console.log('[Webhook]', event.type, '→ email:', email, 'customer:', customerId);
+
+  if (!email) {
+    console.warn('[Webhook] No email found, skipping DB update');
+    return res.json({ received: true });
+  }
 
   if (['customer.subscription.created', 'customer.subscription.updated'].includes(event.type)) {
     const isActive = ['active', 'trialing'].includes(sub?.status);
-    if (email) {
-      await supabase.from('users')
-        .update({ plan: isActive ? 'pro' : 'free', lemon_customer_id: customerId, lemon_subscription_id: subId })
-        .eq('email', email);
-    }
+    await supabase.from('users')
+      .update({
+        plan: isActive ? 'pro' : 'free',
+        lemon_customer_id: customerId,
+        lemon_subscription_id: sub?.id || null,
+      })
+      .eq('email', email);
+    console.log('[Webhook] User', email, '→ plan:', isActive ? 'pro' : 'free');
   }
 
   if (event.type === 'customer.subscription.deleted') {
-    if (email) {
-      await supabase.from('users')
-        .update({ plan: 'free', lemon_subscription_id: null })
-        .eq('email', email);
-    }
+    await supabase.from('users')
+      .update({ plan: 'free', lemon_subscription_id: null })
+      .eq('email', email);
+    console.log('[Webhook] User', email, '→ plan: free (cancelled)');
   }
 
   res.json({ received: true });
