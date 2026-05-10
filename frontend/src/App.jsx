@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom';
 import Landing from './pages/Landing';
 import Dashboard from './pages/Dashboard';
 import SeoLandingPage from './pages/SeoLandingPage';
+import NotFound from './pages/NotFound';
 
 export default function App() {
   return (
@@ -13,9 +14,7 @@ export default function App() {
       <Route path="/framer-to-vercel" element={<SeoLandingPage variant="vercel" />} />
       <Route path="/remove-framer-badge" element={<SeoLandingPage variant="badge" />} />
       <Route path="/framer-without-subscription" element={<SeoLandingPage variant="nosub" />} />
-      import NotFound from './pages/NotFound';
-// ...
-<Route path="*" element={<NotFound />} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }
