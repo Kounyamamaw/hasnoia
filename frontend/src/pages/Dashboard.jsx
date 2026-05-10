@@ -70,7 +70,7 @@ export default function Dashboard() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 20 }}>
           {[
             { label: 'Plan', value: plan.toUpperCase(), color: plan === 'pro' || plan === 'admin' ? '#ea580c' : '#6b7280' },
-            { label: 'Exports this month', value: plan === 'admin' ? '∞' : `${exportsUsed} / ${quota}` },
+            { label: 'Exports this month', value: plan === 'admin' || plan === 'pro' ? `${exportsUsed}` : `${exportsUsed} / ${quota}` },
             { label: 'Total exports', value: stats?.exports?.length ?? 0 },
           ].map(s => (
             <div key={s.label} style={{ background: 'rgba(255,255,255,0.9)', borderRadius: 14, border: '1px solid rgba(0,0,0,0.07)', padding: '18px 20px', backdropFilter: 'blur(10px)' }}>

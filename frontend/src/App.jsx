@@ -13,6 +13,9 @@ export default function App() {
       <Route path="/framer-to-vercel" element={<SeoLandingPage variant="vercel" />} />
       <Route path="/remove-framer-badge" element={<SeoLandingPage variant="badge" />} />
       <Route path="/framer-without-subscription" element={<SeoLandingPage variant="nosub" />} />
+      import NotFound from './pages/NotFound';
+// ...
+<Route path="*" element={<NotFound />} />
     </Routes>
   );
 }

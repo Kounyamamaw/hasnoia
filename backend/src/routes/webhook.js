@@ -1,5 +1,4 @@
-// backend/src/routes/webhook.js
-// POST /webhook — reçoit les événements Lemon Squeezy (paiement, annulation)
+// backend/src/routes/webhook.js — Stripe
 const express = require('express');
 const crypto = require('crypto');
 const { createClient } = require('@supabase/supabase-js');
@@ -9,50 +8,52 @@ function getSupabase() {
   return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 }
 
+function verifyStripeSignature(payload, sigHeader, secret) {
+  const parts = sigHeader.split(',');
+  const timestamp = parts.find(p => p.startsWith('t=')).split('=')[1];
+  const signature = parts.find(p => p.startsWith('v1=')).split('=')[1];
+  const signed = `${timestamp}.${payload}`;
+  const expected = crypto.createHmac('sha256', secret).update(signed).digest('hex');
+  return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+}
+
 router.post('/', async (req, res) => {
-  // Vérifie la signature HMAC de Lemon Squeezy
-  const secret = process.env.LEMON_SQUEEZY_WEBHOOK_SECRET;
-  const signature = req.headers['x-signature'];
-  const body = req.body; // raw buffer grâce au express.raw() dans server.js
+  const sig = req.headers['stripe-signature'];
+  const secret = process.env.STRIPE_WEBHOOK_SECRET;
+  if (!sig || !secret) return res.status(400).json({ error: 'Missing signature' });
 
-  const hmac = crypto.createHmac('sha256', secret);
-  hmac.update(body);
-  const digest = hmac.digest('hex');
-
-  if (digest !== signature) {
-    return res.status(401).json({ error: 'Signature invalide' });
+  let event;
+  try {
+    const body = req.body.toString();
+    if (!verifyStripeSignature(body, sig, secret)) throw new Error('Invalid signature');
+    event = JSON.parse(body);
+  } catch (err) {
+    return res.status(401).json({ error: err.message });
   }
-
-  const payload = JSON.parse(body.toString());
-  const eventName = payload.meta?.event_name;
-  const email = payload.data?.attributes?.user_email;
-  const customerId = payload.data?.attributes?.customer_id?.toString();
-  const subscriptionId = payload.data?.id?.toString();
 
   const supabase = getSupabase();
+  const sub = event.data?.object;
+  const email = sub?.customer_email || null;
+  const customerId = sub?.customer?.toString() || null;
+  const subId = sub?.id || null;
 
-  if (eventName === 'subscription_created' || eventName === 'subscription_resumed') {
-    // Passe l'user en Pro
-    await supabase
-      .from('users')
-      .update({
-        plan: 'pro',
-        lemon_customer_id: customerId,
-        lemon_subscription_id: subscriptionId,
-      })
-      .eq('email', email);
+  console.log('[Webhook]', event.type, email || customerId);
 
-    console.log(`[Webhook] User ${email} → Pro`);
+  if (['customer.subscription.created', 'customer.subscription.updated'].includes(event.type)) {
+    const isActive = ['active', 'trialing'].includes(sub?.status);
+    if (email) {
+      await supabase.from('users')
+        .update({ plan: isActive ? 'pro' : 'free', lemon_customer_id: customerId, lemon_subscription_id: subId })
+        .eq('email', email);
+    }
   }
 
-  if (eventName === 'subscription_cancelled' || eventName === 'subscription_expired') {
-    // Repasse l'user en Free
-    await supabase
-      .from('users')
-      .update({ plan: 'free', lemon_subscription_id: null })
-      .eq('email', email);
-
-    console.log(`[Webhook] User ${email} → Free (annulation)`);
+  if (event.type === 'customer.subscription.deleted') {
+    if (email) {
+      await supabase.from('users')
+        .update({ plan: 'free', lemon_subscription_id: null })
+        .eq('email', email);
+    }
   }
 
   res.json({ received: true });
